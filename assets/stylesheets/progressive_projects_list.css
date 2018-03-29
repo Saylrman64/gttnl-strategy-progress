@@ -22,6 +22,23 @@ div.progressive-overview table.progress {
        width: 80%;
 }
 
-.progressive-project-version {
+/*.progressive-project-version {
        clear: both;
+}*/
+.red-text
+{
+	color: red;
+}
+ul.versions {
+	list-style-type: none;
+}
+
+.version-text {
+	font-size: large;
+}
+.version-project {
+font-size: x-small;
+}
+.margin-adjust {
+	margin-top: -15px;
 }

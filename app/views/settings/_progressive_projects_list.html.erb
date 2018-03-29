@@ -1,3 +1,5 @@
+<%project_cf = ProjectCustomField.where(:field_format=>'date').pluck(:name,:id)%>
+<%version_cf = VersionCustomField.where(:field_format=>'date').pluck(:name,:id)%>
 <p><%= t :progressive_settings_hint %></p>
 <div class="tabular settings">
 	<p>
@@ -30,3 +32,27 @@
 		<%= check_box_tag('settings[show_recent_projects]', true, @settings['show_recent_projects']) %>
 	</p>
 </div>
+<fieldset>
+<p style="text-align: left;font-weight: bold;"><%= l(:progressive_settings_custom_field) %></p>
+<table>
+	<tr>
+	<th style="padding: 35px"><%= l(:project_custom_field) %></th>
+	<th style="padding: 35px"><%= l(:version_custom_field) %></th>
+</tr>
+<tr>
+	<td>
+		<%= select_tag "settings[sort_project_custom_field]",options_for_select(project_cf,@settings['sort_project_custom_field']),multiple: true%>
+	</td>
+	<td><%= select_tag "settings[sort_version_custom_field]",options_for_select(version_cf,@settings['sort_version_custom_field']),multiple: true%></td>
+</tr>
+</table>
+<p><%= l(:sort_order) %>:
+	<%= radio_button_tag("settings[project_sort_order]", "asc", checked = @settings["project_sort_order"] == "asc", options = {}) %>
+	<%= l(:label_ascending)%>
+	<%= radio_button_tag("settings[project_sort_order]", "desc", checked = @settings["project_sort_order"] == "desc", options = {}) %>
+	<%= l(:label_descending)%>
+</p>
+<p><%= l(:sort_project_without_custom_field) %>
+	<%= select_tag "settings[default_project_sort]",options_for_select([[l(:alphabetical), "name"], [l(:creation_date), "created_on"]],@settings['default_project_sort'])%>
+</p>
+</fieldset>

@@ -9,7 +9,11 @@ module Progressive::ApplicationHelperPatch
         elsif session[:progressive]
           session[key]
         else
+          if key == :sort_project_by
+            Setting.plugin_progressive_projects_list[:sort_project_custom_field] || Setting.plugin_progressive_projects_list[:sort_version_custom_field]
+          else
           Setting.plugin_progressive_projects_list[key.to_s]
+          end
         end
       end
 
