@@ -54,7 +54,8 @@ module Progressive::ProjectDecorator
      Issue.open.fixed_version(shared_versions.open).maximum('due_date')
     ].compact.max
   end
-def sorted_css_classes
+
+  def sorted_css_classes
     s = 'project root'
     unless active?
       if archived?
@@ -63,7 +64,6 @@ def sorted_css_classes
         s << ' closed'
       end
     end
-  s
-end
-  
+    s
+  end
 end

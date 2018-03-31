@@ -1,8 +1,3 @@
-<% cf_ids = []
-cf_ids << Setting.plugin_progressive_projects_list["sort_project_custom_field"] 
-cf_ids << Setting.plugin_progressive_projects_list["sort_version_custom_field"]
-setting_cf = CustomField.where(:id=> cf_ids.flatten).pluck(:name,:id)
-%>
 <% if params[:action] == 'index' %>
 	<%= form_tag({}, :method => :get) do %>
 	<h3><%= l(:label_preferences) %></h3>
@@ -17,10 +12,10 @@ setting_cf = CustomField.where(:id=> cf_ids.flatten).pluck(:name,:id)
 		<%= label_tag :show_only_for_my_projects, l(:setting_show_only_for_my_projects)  %><br />
 	<%= check_box_tag :show_recent_projects, 1, progressive_setting?(:show_recent_projects) %>
 		<%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %><br/>
-<%= label_tag :label_sort_project, l(:label_sort_project)  %>
-<%= select_tag :sort_project_by,options_for_select(setting_cf,progressive_setting(:sort_project_by))%>
+	<%= label_tag :label_sort_project, l(:label_sort_project)  %>
+		<%= select_tag :sort_project_by,options_for_select([[l(:label_default),"default"]] + get_sort_options.map{|x|[x.name,x.id]},progressive_setting(:sort_project_by))%>
 	<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
-	<% end %>
+<% end %>
 <% elsif params[:action] == 'show' %>
 	<%= form_tag({}, :method => :get) do %>
 	<h3><%= l(:label_preferences) %></h3>
@@ -35,3 +30,10 @@ setting_cf = CustomField.where(:id=> cf_ids.flatten).pluck(:name,:id)
 	<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
 	<% end %>
 <% end %>
+<script type="text/javascript">
+	<%if params[:version_sorted] == true%>
+	$( document ).ready(function() {
+	$("h2").html("<%= l(:label_version)%>");
+	});
+	<%end%>
+</script>

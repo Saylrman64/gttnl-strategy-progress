@@ -34,11 +34,28 @@ ul.versions {
 }
 
 .version-text {
-	font-size: large;
+	font-weight: bold;
 }
 .version-project {
-font-size: x-small;
+	font-size: small;
 }
 .margin-adjust {
 	margin-top: -15px;
+}
+table.cf_setting tr
+{
+	text-align: center;
+	min-width: 100px;
+}
+table.cf_setting tr th
+{
+	padding-left: 30px;
+}
+
+table.cf_setting tr select
+{
+	min-width: 100px;
+}
+.text-blue{
+	color: #8bb5dc;
 }
