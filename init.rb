@@ -17,7 +17,8 @@ Redmine::Plugin.register :progressive_projects_list do
     'show_project_menu'         => false,
     'show_only_for_my_projects' => false,
     'show_recent_projects'      => true,
-    'show_project_progress_overview' => ''
+    'show_project_progress_overview' => '',
+    'project_sort_order' => "asc" 
   }, :partial => 'settings/progressive_projects_list'
 end
 
