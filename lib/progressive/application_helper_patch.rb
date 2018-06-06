@@ -34,6 +34,22 @@ module Progressive::ApplicationHelperPatch
         cf_ids << Setting.plugin_progressive_projects_list[:sort_version_custom_field]
         CustomField.visible.where(:id=> cf_ids.flatten) rescue []
       end
+
+      def get_custom_fields_to_display(field_class)
+        cf_settings = Setting.plugin_progressive_projects_list["sort_#{field_class}_custom_field"] rescue nil
+        if cf_settings.present?
+          clause = cf_settings.map{|x| "id = #{x} desc" }.join(",")
+          case field_class
+          when "project"
+            ProjectCustomField.visible.where(:id=>cf_settings).order(clause) rescue []
+          when "version"
+            VersionCustomField.visible.where(:id=>cf_settings).order(clause) rescue []
+          else []
+          end  
+        else
+          []
+        end
+      end
     end
   end
 end

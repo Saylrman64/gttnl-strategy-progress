@@ -10,12 +10,3 @@ en:
   progressive_option_left: Left
   progressive_option_right: Right
   label_recent_projects: Recently viewed projects
-  progressive_settings_custom_field: Custom Fields for project sorting
-  project_custom_field: Project custom fields
-  version_custom_field: Version custom fields
-  sort_order: Sort order
-  sort_project_without_custom_field: Sort projects without custom field value by
-  alphabetical: Alphabetical
-  creation_date: Creation date
-  label_sort_project: Sort projects by
-  label_parent_project: Parent project

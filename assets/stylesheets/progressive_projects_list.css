@@ -22,40 +22,6 @@ div.progressive-overview table.progress {
        width: 80%;
 }
 
-/*.progressive-project-version {
+.progressive-project-version {
        clear: both;
-}*/
-.red-text
-{
-	color: red;
-}
-ul.versions {
-	list-style-type: none;
-}
-
-.version-text {
-	font-weight: bold;
-}
-.version-project {
-	font-size: small;
-}
-.margin-adjust {
-	margin-top: -15px;
-}
-table.cf_setting tr
-{
-	text-align: center;
-	min-width: 100px;
-}
-table.cf_setting tr th
-{
-	padding-left: 30px;
-}
-
-table.cf_setting tr select
-{
-	min-width: 100px;
-}
-.text-blue{
-	color: #8bb5dc;
 }
