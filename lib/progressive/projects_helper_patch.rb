@@ -3,7 +3,7 @@ module Progressive::ProjectsHelperPatch
     base.class_eval do
 
       def render_project_hierarchy_with_progress_bars(projects)
-        cf_for_sorting = get_custom_field_for_sort
+        cf_for_sorting = get_field_for_sort
         if projects.present? && cf_for_sorting.present?
           case cf_for_sorting.class.to_s
           when "ProjectCustomField"
@@ -11,42 +11,69 @@ module Progressive::ProjectsHelperPatch
           when "VersionCustomField"
             sort_by_version_custom_field(projects,cf_for_sorting)
           else
-            render_nested_view(projects)
+            if cf_for_sorting == "sort_by_score"
+              sort_by_score_value(projects)
+            else
+              render_nested_view(projects)
+            end
           end
         else
           render_nested_view(projects)
         end
       end
 
+      def sort_by_score_value(projects)
+        if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?   
+          project_score = {}
+          score_sorted_projects = []
+          projects.each do |project|
+            project_score[project] = 0
+            project_fields = project.all_issue_custom_fields.where(:id=>Setting["plugin_gttnl_bsc"]["cf_for_score"]) rescue []
+            project_fields.each do |cf|
+              project_score[project]+= project.calculate_score(cf)
+            end
+          end
+          score_sorted_projects = project_score.sort{|a,b| b[1]<=>a[1]}.collect{|x|x[0]}
+          render_project_cf_sorted_list(score_sorted_projects)
+        else
+          render_nested_view(projects)
+        end
+      end
       #sorts project as per project custom field value
       def sort_by_project_custom_field(projects,cf_for_sorting)
-        sort_criteria = Setting.plugin_progressive_projects_list["project_sort_order"]
+        sort_criteria = Setting.plugin_gttnl_strategy_progress["project_sort_order"]
         sort_criteria = "asc" if sort_criteria.nil?
-        default_project_sort = Setting.plugin_progressive_projects_list["default_project_sort"]
+        default_project_sort = Setting.plugin_gttnl_strategy_progress["default_project_sort"]
         default_project_sort = "name" if default_project_sort.nil?
         project_ids = projects.collect(&:id)
         sorted_projects = Project.joins(:custom_values).where(projects:{id: project_ids},custom_values:{custom_field_id: cf_for_sorting.id}).where("custom_values.value <> ''").order("STR_TO_DATE(custom_values.value, '%Y-%m-%d') #{sort_criteria}").uniq
         project_without_values = projects - sorted_projects.to_a
         project_without_values.sort_by!(&default_project_sort.to_sym)
-        render_project_cf_sorted_list(sorted_projects+project_without_values,cf_for_sorting)
+        render_project_cf_sorted_list(sorted_projects+project_without_values)
       end
 
       #sorts versions as per version custom field value
       def sort_by_version_custom_field(projects,cf_for_sorting)
-        sort_criteria = Setting.plugin_progressive_projects_list["project_sort_order"]
+        sort_criteria = Setting.plugin_gttnl_strategy_progress["project_sort_order"]
         sort_criteria = "asc" if sort_criteria.nil?
-        default_version_sort = Setting.plugin_progressive_projects_list["default_project_sort"]
+        default_version_sort = Setting.plugin_gttnl_strategy_progress["default_project_sort"]
         default_version_sort = "name" if default_version_sort.nil?
         project_ids = projects.collect(&:id)
         visible_versions = Version.visible
         sorted_versions =  visible_versions.joins(:custom_values).where(versions:{project_id: project_ids},custom_values:{custom_field_id: cf_for_sorting.id}).where("custom_values.value <> ''").order("STR_TO_DATE(custom_values.value, '%Y-%m-%d') #{sort_criteria}").uniq
         unsorted_versions = (visible_versions - sorted_versions).sort_by(&default_version_sort.to_sym)
-        render_version_cf_sorted_list(sorted_versions+unsorted_versions,cf_for_sorting)
+        render_version_cf_sorted_list(sorted_versions+unsorted_versions)
       end
 
       #renders project list sorted by version custom field value
-      def render_version_cf_sorted_list(versions,cf_for_sorting)
+      def render_version_cf_sorted_list(versions)
         cf_values_to_display = get_custom_fields_to_display("version")
+        score_to_display = false
+        if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
+            score_to_display = true
+          end
+        end
         s = '<ul class="projects root">'
         versions.each do |version|
           project = version.project
@@ -76,6 +103,7 @@ module Progressive::ProjectsHelperPatch
               s << due_date_tag(version.effective_date)
             end
             s << '</div>'
+            s << render_version_score_card(version,project) if score_to_display
             s << progress_bar([version.closed_percent, version.completed_percent], :width => '30em', :legend => ('%0.0f%' % version.completed_percent))
           end
           s << "</div></li>"
@@ -85,8 +113,14 @@ module Progressive::ProjectsHelperPatch
       end
 
       #renders project list sorted by project custom field value
-      def render_project_cf_sorted_list(projects,cf_for_sorting)
-        cf_values_to_display = get_custom_fields_to_display("project")
+      def render_project_cf_sorted_list(projects)
+        options = {}
+        options[:cf] = get_custom_fields_to_display("project")
+        if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
+            options[:score] = true
+          end
+        end
         s = '<ul class="projects root">'
         projects.each do |project|
           project.extend(Progressive::ProjectDecorator)
@@ -98,9 +132,11 @@ module Progressive::ProjectsHelperPatch
             end
             if project.description.present? && progressive_setting?(:show_project_description)
               s << content_tag('div', textilizable(project.short_description, :project => project), :class => 'wiki description')
+            else
+              s << '<br/><br/>'
             end
             if progressive_setting?(:show_project_progress) && User.current.allowed_to?(:view_issues, project)
-              s << render_project_progress_bars(project,{cf: cf_values_to_display})
+              s << render_project_progress_bars(project,options)
             end
           end
           s << '</div></li>'
@@ -111,7 +147,13 @@ module Progressive::ProjectsHelperPatch
 
       #renders default hierarchical view of projects
       def render_nested_view(projects)
-        cf_values_to_display = get_custom_fields_to_display("project")
+        options = {}
+        options[:cf] = get_custom_fields_to_display("project")
+        if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
+            options[:score] = true
+          end
+        end
         render_project_nested_lists(projects) do |project|
           s = link_to_project(project, {}, :class => "#{project.css_classes} #{User.current.member_of?(project) ? 'my-project' : nil}")
           if !progressive_setting?(:show_only_for_my_projects) || User.current.member_of?(project)
@@ -120,9 +162,11 @@ module Progressive::ProjectsHelperPatch
             end
             if project.description.present? && progressive_setting?(:show_project_description)
               s << content_tag('div', textilizable(project.short_description, :project => project), :class => 'wiki description')
+            else
+              s << '<br><br>'.html_safe
             end
             if progressive_setting?(:show_project_progress) && User.current.allowed_to?(:view_issues, project)
-              s << render_project_progress_bars(project,{cf: cf_values_to_display})
+              s << render_project_progress_bars(project,options)
             end
           end
           s
@@ -152,10 +196,14 @@ module Progressive::ProjectsHelperPatch
           end
           s << due_date_tag(project.opened_due_date) if project.opened_due_date
           s << "</div>"
+          s << render_project_score_card(project) if options[:score].present?
           s << progress_bar([project.issues_closed_percent, project.issues_completed_percent], :width => '30em', :legend => '%0.0f%' % project.issues_closed_percent)
-        elsif options[:cf]
-          s << "<br>"
-          s << render_custom_field_progress_values(project,options[:cf])
+        else
+          if options[:cf]
+            custom_field_values = render_custom_field_progress_values(project,options[:cf])
+            s << "<br>" + custom_field_values if custom_field_values.present?
+          end
+          s << render_project_score_card(project) if options[:score].present?
         end
 
         if project.versions.open.any?
@@ -166,9 +214,14 @@ module Progressive::ProjectsHelperPatch
               link_to(l(:label_x_open_issues_abbr, :count => version.open_issues_count), :controller => 'issues', :action => 'index', :project_id => version.project, :status_id => 'o', :fixed_version_id => version, :set_filter => 1) +
               "<small> / " + link_to_if(version.closed_issues_count > 0, l(:label_x_closed_issues_abbr, :count => version.closed_issues_count), :controller => 'issues', :action => 'index', :project_id => version.project, :status_id => 'c', :fixed_version_id => version, :set_filter => 1) + "</small>" + ". "
             s << due_date_tag(version.effective_date) if version.effective_date
-            s << "<br>" +
-              progress_bar([version.closed_percent, version.completed_percent], :width => '30em', :legend => ('%0.0f%' % version.completed_percent)) + 
-              "</div>"
+            
+            if options[:score]
+              s << render_version_score_card(version,project) 
+            else
+              s << "<br>"
+            end
+             s << progress_bar([version.closed_percent, version.completed_percent], :width => '30em', :legend => ('%0.0f%' % version.completed_percent))
+             s << "</div>"
           end
           s << "</div>"
         end
@@ -183,14 +236,51 @@ module Progressive::ProjectsHelperPatch
         links.empty? ? nil : content_tag('ul', links.join("\n").html_safe, :class => 'progressive-project-menu')
       end
 
+      def render_project_score_card(project)
+        s = ""
+        score_hash = {}
+        score_fields = project.all_issue_custom_fields.where(:id=>Setting["plugin_gttnl_bsc"]["cf_for_score"]) rescue []
+        score_fields.each do |cf|
+          score_hash[cf.id] = [cf.name,project.calculate_score(cf)]
+        end
+        if score_hash.present?
+          s << "<div><span class='project_score_total'>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</span>  "
+          score_hash.each do |id,score|
+            s  << "<span class='score_field_#{id}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
+          end
+          s << "</div>"
+        end
+        s
+      end
+
+      def render_version_score_card(version,project)
+        s = ""
+        if version.respond_to?(:calculate_version_score)
+          score_hash = {}
+          score_fields = project.all_issue_custom_fields.where(:id=>Setting["plugin_gttnl_bsc"]["cf_for_score"]) rescue []
+          score_fields.each do |cf|
+            score_hash[cf.id] = [cf.name,version.calculate_version_score(cf)]
+          end
+          if score_hash.present?
+            s << "<div><span class='project_version_score_total'>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</span>"
+            score_hash.each do |id,score|
+              s  << "<span class='score_field_#{id}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
+            end
+            s << "</div>"
+          end
+        end
+        s
+      end
+
       def due_date_tag(date)
         content_tag(:time, due_date_distance_in_words(date), :class => (date < Date.today ? 'progressive-overdue' : nil), :title => date)
       end
 
-      def get_custom_field_for_sort
+      def get_field_for_sort
         cf_for_sorting = nil
         sort_setting = progressive_setting(:sort_project_by)
         if sort_setting.present?
+          return sort_setting if sort_setting == "sort_by_score"
           sort_setting = sort_setting.first if sort_setting.is_a?(Array)
           cf_for_sorting = CustomField.find(sort_setting) rescue nil
         end

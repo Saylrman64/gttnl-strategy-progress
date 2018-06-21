@@ -4,6 +4,6 @@ class Progressive::ProjectsListViewListener < Redmine::Hook::ViewListener
   render_on :view_projects_show_right,  :partial => "progressive_overview", :locals => {:side => :right}
 
   def view_layouts_base_html_head(context)
-    stylesheet_link_tag('progressive_projects_list', :plugin => :progressive_projects_list)
+    stylesheet_link_tag('gttnl_strategy_progress', :plugin => :gttnl_strategy_progress)
   end
 end
