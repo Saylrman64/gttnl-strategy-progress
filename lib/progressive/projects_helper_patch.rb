@@ -87,9 +87,9 @@ module Progressive::ProjectsHelperPatch
           end
           if version.open?
             if version.description.present?
-              s << '<div style="margin-top:5px">'
+              s << '<div style="margin-top:5px;padding-left:5px;">'
             else
-              s << '<div style="margin-top:20px">'
+              s << '<div style="margin-top:20px;padding-left:5px;">'
             end
             if (version.open_issues_count > 0)
               s << '<span class="progressive-project-issues">'
@@ -103,7 +103,7 @@ module Progressive::ProjectsHelperPatch
               s << due_date_tag(version.effective_date)
             end
             s << '</div>'
-            s << render_version_score_card(version,project) if score_to_display
+            s << '<div class="version_sorted_score_list">' + render_version_score_card(version,project) + '</div>' if score_to_display
             s << progress_bar([version.closed_percent, version.completed_percent], :width => '30em', :legend => ('%0.0f%' % version.completed_percent))
           end
           s << "</div></li>"
@@ -244,9 +244,9 @@ module Progressive::ProjectsHelperPatch
           score_hash[cf.id] = [cf.name,project.calculate_score(cf)]
         end
         if score_hash.present?
-          s << "<div><span class='project_score_total'>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</span>  "
+          s << "<div><span class='project_score_total'><b>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</b></span>  "
           score_hash.each do |id,score|
-            s  << "<span class='score_field_#{id}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
+            s  << "<span class='project_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
           end
           s << "</div>"
         end
@@ -262,9 +262,9 @@ module Progressive::ProjectsHelperPatch
             score_hash[cf.id] = [cf.name,version.calculate_version_score(cf)]
           end
           if score_hash.present?
-            s << "<div><span class='project_version_score_total'>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</span>"
+            s << "<div><span class='project_version_score_total'><b>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</b></span>"
             score_hash.each do |id,score|
-              s  << "<span class='score_field_#{id}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
+              s  << "<span class='version_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
             end
             s << "</div>"
           end
