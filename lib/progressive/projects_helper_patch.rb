@@ -70,7 +70,7 @@ module Progressive::ProjectsHelperPatch
         cf_values_to_display = get_custom_fields_to_display("version")
         score_to_display = false
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
-          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
             score_to_display = true
           end
         end
@@ -117,7 +117,7 @@ module Progressive::ProjectsHelperPatch
         options = {}
         options[:cf] = get_custom_fields_to_display("project")
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
-          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
             options[:score] = true
           end
         end
@@ -128,7 +128,7 @@ module Progressive::ProjectsHelperPatch
           s << link_to_project(project, {}, :class => "#{project.sorted_css_classes} #{User.current.member_of?(project) ? 'my-project' : nil}")
           if !progressive_setting?(:show_only_for_my_projects) || User.current.member_of?(project)
             if progressive_setting?(:show_project_menu)
-              s << render_project_menu(project) + '<br />'.html_safe
+              s << '<br />'.html_safe + render_project_menu(project)
             end
             if project.description.present? && progressive_setting?(:show_project_description)
               s << content_tag('div', textilizable(project.short_description, :project => project), :class => 'wiki description')
@@ -137,6 +137,8 @@ module Progressive::ProjectsHelperPatch
             end
             if progressive_setting?(:show_project_progress) && User.current.allowed_to?(:view_issues, project)
               s << render_project_progress_bars(project,options)
+            elsif options[:score] == true && User.current.allowed_to?(:view_issues, project) && project.issues.any?
+              s << render_project_score_card(project)
             end
           end
           s << '</div></li>'
@@ -150,7 +152,7 @@ module Progressive::ProjectsHelperPatch
         options = {}
         options[:cf] = get_custom_fields_to_display("project")
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
-          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
             options[:score] = true
           end
         end
@@ -158,7 +160,7 @@ module Progressive::ProjectsHelperPatch
           s = link_to_project(project, {}, :class => "#{project.css_classes} #{User.current.member_of?(project) ? 'my-project' : nil}")
           if !progressive_setting?(:show_only_for_my_projects) || User.current.member_of?(project)
             if progressive_setting?(:show_project_menu)
-              s << render_project_menu(project) + '<br />'.html_safe
+              s << '<br>'.html_safe + render_project_menu(project)
             end
             if project.description.present? && progressive_setting?(:show_project_description)
               s << content_tag('div', textilizable(project.short_description, :project => project), :class => 'wiki description')
@@ -167,6 +169,8 @@ module Progressive::ProjectsHelperPatch
             end
             if progressive_setting?(:show_project_progress) && User.current.allowed_to?(:view_issues, project)
               s << render_project_progress_bars(project,options)
+            elsif options[:score] == true && User.current.allowed_to?(:view_issues, project) && project.issues.any?
+              s << render_project_score_card(project).html_safe
             end
           end
           s
@@ -196,14 +200,14 @@ module Progressive::ProjectsHelperPatch
           end
           s << due_date_tag(project.opened_due_date) if project.opened_due_date
           s << "</div>"
-          s << render_project_score_card(project) if options[:score].present?
+          s << render_project_score_card(project) if options[:score].present? && project.issues.any?
           s << progress_bar([project.issues_closed_percent, project.issues_completed_percent], :width => '30em', :legend => '%0.0f%' % project.issues_closed_percent)
         else
           if options[:cf]
             custom_field_values = render_custom_field_progress_values(project,options[:cf])
             s << "<br>" + custom_field_values if custom_field_values.present?
           end
-          s << render_project_score_card(project) if options[:score].present?
+          s << render_project_score_card(project) if options[:score].present? && project.issues.any?
         end
 
         if project.versions.open.any?
@@ -233,15 +237,19 @@ module Progressive::ProjectsHelperPatch
         menu_items_for(:project_menu, project) do |node|
           links << render_menu_node(node, project)
         end
-        links.empty? ? nil : content_tag('ul', links.join("\n").html_safe, :class => 'progressive-project-menu')
+        links.empty? ? nil : content_tag('ul', links.join("\n").html_safe, :class => 'progressive-project-menu',:style=>'display:inline-block')
       end
 
       def render_project_score_card(project)
         s = ""
         score_hash = {}
-        score_fields = project.all_issue_custom_fields.where(:id=>Setting["plugin_gttnl_bsc"]["cf_for_score"]) rescue []
-        score_fields.each do |cf|
-          score_hash[cf.id] = [cf.name,project.calculate_score(cf)]
+        score_cf_settings = Setting.plugin_gttnl_bsc["cf_for_score"] rescue nil
+        if score_cf_settings
+          clause = score_cf_settings.map{|x| "id = #{x} desc" }.join(",")
+          score_fields = project.all_issue_custom_fields.where(:id=>score_cf_settings).reorder(clause) rescue []
+          score_fields.each do |cf|
+            score_hash[cf.id] = [cf.name,project.calculate_score(cf)]
+          end
         end
         if score_hash.present?
           s << "<div><span class='project_score_total'><b>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</b></span>  "
@@ -257,9 +265,13 @@ module Progressive::ProjectsHelperPatch
         s = ""
         if version.respond_to?(:calculate_version_score)
           score_hash = {}
-          score_fields = project.all_issue_custom_fields.where(:id=>Setting["plugin_gttnl_bsc"]["cf_for_score"]) rescue []
-          score_fields.each do |cf|
-            score_hash[cf.id] = [cf.name,version.calculate_version_score(cf)]
+          score_cf_settings = Setting.plugin_gttnl_bsc["cf_for_score"] rescue nil
+          if score_cf_settings
+            clause = score_cf_settings.map{|x| "id = #{x} desc" }.join(",")
+            score_fields = project.all_issue_custom_fields.where(:id=>score_cf_settings).reorder(clause) rescue []
+            score_fields.each do |cf|
+              score_hash[cf.id] = [cf.name,version.calculate_version_score(cf)]
+            end
           end
           if score_hash.present?
             s << "<div><span class='project_version_score_total'><b>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</b></span>"

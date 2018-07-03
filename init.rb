@@ -17,6 +17,7 @@ Redmine::Plugin.register :gttnl_strategy_progress do
     'show_project_menu'         => false,
     'show_only_for_my_projects' => false,
     'show_recent_projects'      => true,
+    'show_strategy_initiative_scorecard' => false,
     'show_project_progress_overview' => '',
     'project_sort_order' => "asc" 
   }, :partial => 'settings/progressive_projects_list'

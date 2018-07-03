@@ -11,7 +11,15 @@
 	<%= check_box_tag :show_only_for_my_projects, 1, progressive_setting?(:show_only_for_my_projects) %>
 		<%= label_tag :show_only_for_my_projects, l(:setting_show_only_for_my_projects)  %><br />
 	<%= check_box_tag :show_recent_projects, 1, progressive_setting?(:show_recent_projects) %>
-		<%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %><br/><br/>
+		<%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %>
+	<%if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)%>
+		<%if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?%>
+		<br />
+			<%= check_box_tag :show_strategy_initiative_scorecard, 1, progressive_setting?(:show_strategy_initiative_scorecard) %>
+			<%= label_tag :show_strategy_initiative_scorecard, l(:label_show_scorecard)  %>
+		<%end%>
+	<%end%>
+		<br/><br/>
 	<%= label_tag :label_sort_project, l(:label_sort_project)  %>
 		<%= select_tag :sort_project_by,options_for_select(get_sort_options,progressive_setting(:sort_project_by))%>
 	<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
