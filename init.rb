@@ -5,7 +5,7 @@ end
 Redmine::Plugin.register :gttnl_strategy_progress do
   name 'GTTNL Strategy Progress plugin'
   author  'Dmitry Babenko & Kumar Abhinav'
-  description 'Strategy List with menus and progress bars.'
+  description 'GTTNL implementation of Strategy List with menus and progress bars.'
   version '3.0.1'
   url 'http://stgeneral.github.io/redmine-progressive-projects-list/'
   author_url 'https://github.com/stgeneral'
