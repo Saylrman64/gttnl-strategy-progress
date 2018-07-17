@@ -37,16 +37,26 @@ module Progressive::ApplicationHelperPatch
         cf_ids = []
         cf_ids << Setting.plugin_gttnl_strategy_progress[:sort_project_custom_field] 
         cf_ids << Setting.plugin_gttnl_strategy_progress[:sort_version_custom_field]
+        if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc) && Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
+          cf_ids << Setting["plugin_gttnl_bsc"]["cf_for_score"]
+        end
         CustomField.visible.where(:id=> cf_ids.flatten) rescue []
       end
 
       def get_sort_options
         sort_options = [[l(:label_default),"default"]]
-        sort_custom_fields = get_sort_custom_fields
+        cf_ids = []
+        cf_ids << Setting.plugin_gttnl_strategy_progress[:sort_project_custom_field] 
+        cf_ids << Setting.plugin_gttnl_strategy_progress[:sort_version_custom_field]
+        sort_custom_fields = CustomField.visible.where(:id=> cf_ids.flatten) rescue []
         sort_custom_fields.each{|x|sort_options << [x.name,x.id]}
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
           if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?
             sort_options << [l(:sort_by_score),"sort_by_score"]
+            sort_fields = CustomField.visible.where(:id=>Setting["plugin_gttnl_bsc"]["cf_for_score"]) rescue []
+            sort_fields.each do |cf|
+              sort_options << ["#{cf.name} #{l(:label_score)}",cf.id]
+             end
           end
         end
         sort_options

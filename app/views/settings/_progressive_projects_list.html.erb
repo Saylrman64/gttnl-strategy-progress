@@ -50,6 +50,10 @@
     <%= check_box_tag('settings[show_recent_projects]', true, @settings['show_recent_projects']) %>
   </p>
   <p>
+    <%= setting_label(:show_custom_date_fields) %>
+    <%= check_box_tag('settings[show_custom_date_fields]', true, @settings['show_custom_date_fields']) %>
+  </p>
+  <p>
     <%= setting_label(:show_strategy_initiative_scorecard) %>
     <%= check_box_tag('settings[show_strategy_initiative_scorecard]', true, @settings['show_strategy_initiative_scorecard']) %>
   </p>

@@ -11,7 +11,9 @@
 	<%= check_box_tag :show_only_for_my_projects, 1, progressive_setting?(:show_only_for_my_projects) %>
 		<%= label_tag :show_only_for_my_projects, l(:setting_show_only_for_my_projects)  %><br />
 	<%= check_box_tag :show_recent_projects, 1, progressive_setting?(:show_recent_projects) %>
-		<%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %>
+		<%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %><br />
+	<%= check_box_tag :show_custom_date_fields, 1, progressive_setting?(:show_custom_date_fields) %>
+		<%= label_tag :show_custom_date_fields, l(:setting_show_custom_date_fields)  %>
 	<%if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)%>
 		<%if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?%>
 		<br />

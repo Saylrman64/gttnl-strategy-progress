@@ -10,6 +10,8 @@ module Progressive::ProjectsHelperPatch
             sort_by_project_custom_field(projects,cf_for_sorting)
           when "VersionCustomField"
             sort_by_version_custom_field(projects,cf_for_sorting)
+          when "IssueCustomField"
+            sort_by_custom_field_score(projects,cf_for_sorting)
           else
             if cf_for_sorting == "sort_by_score"
               sort_by_score_value(projects)
@@ -20,6 +22,16 @@ module Progressive::ProjectsHelperPatch
         else
           render_nested_view(projects)
         end
+      end
+      
+      def sort_by_custom_field_score(projects,cf_for_sorting)
+        project_score = {}
+        score_sorted_projects = []
+        projects.each do |project|
+          project_score[project] = project.calculate_score(cf_for_sorting)
+        end
+        score_sorted_projects = project_score.sort{|a,b| b[1]<=>a[1]}.collect{|x|x[0]}
+        render_project_cf_sorted_list(score_sorted_projects,"score")
       end
 
       def sort_by_score_value(projects)
@@ -34,7 +46,7 @@ module Progressive::ProjectsHelperPatch
             end
           end
           score_sorted_projects = project_score.sort{|a,b| b[1]<=>a[1]}.collect{|x|x[0]}
-          render_project_cf_sorted_list(score_sorted_projects)
+          render_project_cf_sorted_list(score_sorted_projects,"score")
         else
           render_nested_view(projects)
         end
@@ -49,7 +61,7 @@ module Progressive::ProjectsHelperPatch
         sorted_projects = Project.joins(:custom_values).where(projects:{id: project_ids},custom_values:{custom_field_id: cf_for_sorting.id}).where("custom_values.value <> ''").order("STR_TO_DATE(custom_values.value, '%Y-%m-%d') #{sort_criteria}").uniq
         project_without_values = projects - sorted_projects.to_a
         project_without_values.sort_by!(&default_project_sort.to_sym)
-        render_project_cf_sorted_list(sorted_projects+project_without_values)
+        render_project_cf_sorted_list(sorted_projects+project_without_values,"project")
       end
 
       #sorts versions as per version custom field value
@@ -113,11 +125,11 @@ module Progressive::ProjectsHelperPatch
       end
 
       #renders project list sorted by project custom field value
-      def render_project_cf_sorted_list(projects)
+      def render_project_cf_sorted_list(projects,sorted_by)
         options = {}
-        options[:cf] = get_custom_fields_to_display("project")
+        options[:cf] = get_custom_fields_to_display("project") if (sorted_by == "project" || progressive_setting?(:show_custom_date_fields)) 
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
-          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && (sorted_by == "score" || progressive_setting?(:show_strategy_initiative_scorecard))
             options[:score] = true
           end
         end
@@ -150,7 +162,7 @@ module Progressive::ProjectsHelperPatch
       #renders default hierarchical view of projects
       def render_nested_view(projects)
         options = {}
-        options[:cf] = get_custom_fields_to_display("project")
+        options[:cf] = get_custom_fields_to_display("project") if progressive_setting?(:show_custom_date_fields)
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
           if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
             options[:score] = true

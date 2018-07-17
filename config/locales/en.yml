@@ -6,6 +6,7 @@ en:
   setting_show_only_for_my_projects: Show only for my projects
   setting_show_recent_projects: Show 'Recently viewed projects'
   setting_show_strategy_initiative_scorecard: Show Scorecard for Roadmap & Strategy'
+  setting_show_custom_date_fields: Show Desired Begin and Due Dates
   progressive_settings_hint: Defaults settings. Users may override them per session.
   label_progress: Progress
   progressive_option_left: Left
@@ -13,3 +14,4 @@ en:
   label_recent_projects: Recently viewed projects
   sort_by_score: "Sort By Total Score"
   label_show_scorecard: "Show Scorecard"
+  label_score: "score"
