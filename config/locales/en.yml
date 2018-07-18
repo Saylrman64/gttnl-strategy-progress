@@ -15,5 +15,5 @@ en:
   sort_by_score: "Sort By Total Score"
   label_show_scorecard: "Show Scorecard"
   label_score: "score"
-  tooltip_date_field_selected: "This box is automatically checked when sorting by Date Field is selected"
-  tooltip_scorecard_selected: "This box is automatically checked when sorting by Score is selected"
+  tooltip_date_field_selected: "This box is automatically checked whenenever Sort Roadmap & Strategy by Date is selected"
+  tooltip_scorecard_selected: "This box is automatically checked whenever Sort Roadmap & Strategy by Score is selected"
