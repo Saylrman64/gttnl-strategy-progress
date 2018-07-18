@@ -80,6 +80,7 @@ module Progressive::ProjectsHelperPatch
       #renders project list sorted by version custom field value
       def render_version_cf_sorted_list(versions)
         cf_values_to_display = get_custom_fields_to_display("version")
+        params[:force_show_custom_date_fields] = "1"
         score_to_display = false
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
           if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
@@ -127,10 +128,14 @@ module Progressive::ProjectsHelperPatch
       #renders project list sorted by project custom field value
       def render_project_cf_sorted_list(projects,sorted_by)
         options = {}
-        options[:cf] = get_custom_fields_to_display("project") if (sorted_by == "project" || progressive_setting?(:show_custom_date_fields)) 
+        if (sorted_by == "project" || progressive_setting?(:show_custom_date_fields))
+          options[:cf] = get_custom_fields_to_display("project")
+          params[:force_show_custom_date_fields] = "1"
+        end
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
           if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && (sorted_by == "score" || progressive_setting?(:show_strategy_initiative_scorecard))
             options[:score] = true
+            params[:force_show_strategy_initiative_scorecard] = "1"
           end
         end
         s = '<ul class="projects root">'

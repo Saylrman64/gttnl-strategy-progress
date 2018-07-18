@@ -20,7 +20,13 @@ module Progressive::ApplicationHelperPatch
         else
           if request.params[:progressive]
             session[:progressive] = true
-            session[key] = request.params[key]
+            if key == :show_custom_date_fields
+              session[key] = params[:force_show_custom_date_fields] || request.params[key]
+            elsif key == :show_strategy_initiative_scorecard
+              session[key] = params[:force_show_strategy_initiative_scorecard] || request.params[key]
+            else
+              session[key] = request.params[key]
+            end  
           elsif session[:progressive]
             session[key]
           else

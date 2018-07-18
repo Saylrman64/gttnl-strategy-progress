@@ -12,12 +12,12 @@
 		<%= label_tag :show_only_for_my_projects, l(:setting_show_only_for_my_projects)  %><br />
 	<%= check_box_tag :show_recent_projects, 1, progressive_setting?(:show_recent_projects) %>
 		<%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %><br />
-	<%= check_box_tag :show_custom_date_fields, 1, progressive_setting?(:show_custom_date_fields) %>
+	<%= check_box_tag :show_custom_date_fields, 1, progressive_setting?(:show_custom_date_fields),:title => t(:tooltip_date_field_selected) %>
 		<%= label_tag :show_custom_date_fields, l(:setting_show_custom_date_fields)  %>
 	<%if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)%>
 		<%if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?%>
 		<br />
-			<%= check_box_tag :show_strategy_initiative_scorecard, 1, progressive_setting?(:show_strategy_initiative_scorecard) %>
+			<%= check_box_tag :show_strategy_initiative_scorecard, 1, progressive_setting?(:show_strategy_initiative_scorecard), :title => t(:tooltip_scorecard_selected) %>
 			<%= label_tag :show_strategy_initiative_scorecard, l(:label_show_scorecard)  %>
 		<%end%>
 	<%end%>
@@ -40,3 +40,24 @@
 	<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
 	<% end %>
 <% end %>
+<%= javascript_include_tag('tippy', plugin: 'gttnl_strategy_progress') %>
+<script type="text/javascript">
+  tippy(document.getElementById('show_custom_date_fields'),{
+    size: 'small',
+    distance: 10,
+    animateFill: false,
+    animation: 'fade',
+    arrow: false,
+    placement: 'right',
+    theme: 'gttnl'
+  });
+  tippy(document.getElementById('show_strategy_initiative_scorecard'),{
+    size: 'small',
+    distance: 10,
+    animateFill: false,
+    animation: 'fade',
+    arrow: false,
+    placement: 'right',
+    theme: 'gttnl'
+  });
+  </script>
