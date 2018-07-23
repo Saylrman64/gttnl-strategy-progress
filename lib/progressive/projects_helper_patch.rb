@@ -14,7 +14,7 @@ module Progressive::ProjectsHelperPatch
             sort_by_custom_field_score(projects,cf_for_sorting)
           else
             if cf_for_sorting == "sort_by_score"
-              sort_by_score_value(projects)
+              sort_by_total_score_value(projects)
             else
               render_nested_view(projects)
             end
@@ -28,29 +28,23 @@ module Progressive::ProjectsHelperPatch
         project_score = {}
         score_sorted_projects = []
         projects.each do |project|
-          project_score[project] = project.calculate_score(cf_for_sorting)
+          project_score[project] = project.calculate_score_for_field(cf_for_sorting)
         end
         score_sorted_projects = project_score.sort{|a,b| b[1]<=>a[1]}.collect{|x|x[0]}
         render_project_cf_sorted_list(score_sorted_projects,"score")
       end
 
-      def sort_by_score_value(projects)
-        if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?   
-          project_score = {}
-          score_sorted_projects = []
-          projects.each do |project|
-            project_score[project] = 0
-            project_fields = project.all_issue_custom_fields.where(:id=>Setting["plugin_gttnl_bsc"]["cf_for_score"]) rescue []
-            project_fields.each do |cf|
-              project_score[project]+= project.calculate_score(cf)
-            end
-          end
-          score_sorted_projects = project_score.sort{|a,b| b[1]<=>a[1]}.collect{|x|x[0]}
-          render_project_cf_sorted_list(score_sorted_projects,"score")
-        else
-          render_nested_view(projects)
+      def sort_by_total_score_value(projects) 
+        project_score_hash = {} 
+        projects.each do |project|
+          sum_val = calculate_project_score(project,"cf_for_score_add").sum{|x,y|y[1]}
+          sub_val = calculate_project_score(project,"cf_for_score_subtract").sum{|x,y|y[1]}
+          project_score_hash[project] = sum_val - sub_val
         end
+        score_sorted_projects = project_score_hash.sort{|a,b| b[1]<=>a[1]}.collect{|x|x[0]}
+        render_project_cf_sorted_list(score_sorted_projects,"score")
       end
+      
       #sorts project as per project custom field value
       def sort_by_project_custom_field(projects,cf_for_sorting)
         sort_criteria = Setting.plugin_gttnl_strategy_progress["project_sort_order"]
@@ -83,7 +77,7 @@ module Progressive::ProjectsHelperPatch
         params[:force_show_custom_date_fields] = "1"
         score_to_display = false
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
-          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score_add"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
             score_to_display = true
           end
         end
@@ -133,7 +127,7 @@ module Progressive::ProjectsHelperPatch
           params[:force_show_custom_date_fields] = "1"
         end
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
-          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && (sorted_by == "score" || progressive_setting?(:show_strategy_initiative_scorecard))
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score_add"].present? && (sorted_by == "score" || progressive_setting?(:show_strategy_initiative_scorecard))
             options[:score] = true
             params[:force_show_strategy_initiative_scorecard] = "1"
           end
@@ -169,7 +163,7 @@ module Progressive::ProjectsHelperPatch
         options = {}
         options[:cf] = get_custom_fields_to_display("project") if progressive_setting?(:show_custom_date_fields)
         if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)
-          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
+          if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score_add"].present? && progressive_setting?(:show_strategy_initiative_scorecard)
             options[:score] = true
           end
         end
@@ -226,7 +220,6 @@ module Progressive::ProjectsHelperPatch
           end
           s << render_project_score_card(project) if options[:score].present? && project.issues.any?
         end
-
         if project.versions.open.any?
           s << '<div class="progressive-project-version">'
           project.versions.open.reverse_each do |version|
@@ -259,46 +252,60 @@ module Progressive::ProjectsHelperPatch
 
       def render_project_score_card(project)
         s = ""
-        score_hash = {}
-        score_cf_settings = Setting.plugin_gttnl_bsc["cf_for_score"] rescue nil
-        if score_cf_settings
-          clause = score_cf_settings.map{|x| "id = #{x} desc" }.join(",")
-          score_fields = project.all_issue_custom_fields.where(:id=>score_cf_settings).reorder(clause) rescue []
-          score_fields.each do |cf|
-            score_hash[cf.id] = [cf.name,project.calculate_score(cf)]
-          end
+        sum_score = calculate_project_score(project,"cf_for_score_add")
+        subtract_score = calculate_project_score(project,"cf_for_score_subtract")
+        s << "<div class='project_scorecard'><span class='project_score_total'><b>" + l(:score_total) + ":" + ((sum_score.sum{|x,y| y[1]}) - (subtract_score.sum{|x,y| y[1]})).to_s + "</b></span>  "
+        sum_score.each do |id,score|
+          s  << "<span class='project_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
         end
-        if score_hash.present?
-          s << "<div><span class='project_score_total'><b>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</b></span>  "
-          score_hash.each do |id,score|
-            s  << "<span class='project_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
+        subtract_score.each do |id,score|
+          s  << "<span class='project_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
+        end
+        s << "</div>"
+        s
+      end
+
+      def render_version_score_card(version,project)
+        s = ""
+        if version.respond_to?(:calculate_version_score_for_field)
+          sum_score = calculate_version_score(version,"cf_for_score_add")
+          subtract_score = calculate_version_score(version,"cf_for_score_subtract")
+          s << "<div><span class='project_version_score_total'><b>" + l(:score_total) + ":" + ((sum_score.sum{|x,y| y[1]}) - (subtract_score.sum{|x,y| y[1]})).to_s + "</b></span>"
+          sum_score.each do |id,score|
+            s  << "<span class='version_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
+          end
+          subtract_score.each do |id,score|
+            s  << "<span class='version_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
           end
           s << "</div>"
         end
         s
       end
 
-      def render_version_score_card(version,project)
-        s = ""
-        if version.respond_to?(:calculate_version_score)
-          score_hash = {}
-          score_cf_settings = Setting.plugin_gttnl_bsc["cf_for_score"] rescue nil
-          if score_cf_settings
-            clause = score_cf_settings.map{|x| "id = #{x} desc" }.join(",")
-            score_fields = project.all_issue_custom_fields.where(:id=>score_cf_settings).reorder(clause) rescue []
-            score_fields.each do |cf|
-              score_hash[cf.id] = [cf.name,version.calculate_version_score(cf)]
-            end
-          end
-          if score_hash.present?
-            s << "<div><span class='project_version_score_total'><b>" + l(:score_total) + ":" + score_hash.sum{|x,y| y[1]}.to_s + "</b></span>"
-            score_hash.each do |id,score|
-              s  << "<span class='version_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
-            end
-            s << "</div>"
+      def calculate_version_score(version,score_type)
+        score_hash = {}
+        score_cf_settings = Setting.plugin_gttnl_bsc[score_type] rescue nil
+        if score_cf_settings
+          clause = score_cf_settings.map{|x| "id = #{x} desc" }.join(",")
+          cf_for_score = version.project.all_issue_custom_fields.where(:id=>score_cf_settings).reorder(clause) rescue []
+          cf_for_score.each do |cf|
+            score_hash[cf.id] = [cf.name,version.calculate_version_score_for_field(cf)]
           end
         end
-        s
+        score_hash
+      end
+
+      def calculate_project_score(project,score_type)
+        score_hash = {}
+        score_cf_settings = Setting.plugin_gttnl_bsc[score_type] rescue nil
+        if score_cf_settings
+          clause = score_cf_settings.map{|x| "id = #{x} desc" }.join(",")
+          cf_for_score = project.all_issue_custom_fields.where(:id=>score_cf_settings).reorder(clause) rescue []
+          cf_for_score.each do |cf|
+            score_hash[cf.id] = [cf.name,project.calculate_score_for_field(cf)]
+          end
+        end
+        score_hash
       end
 
       def due_date_tag(date)

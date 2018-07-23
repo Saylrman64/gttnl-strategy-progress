@@ -1,44 +1,44 @@
 <% if params[:action] == 'index' %>
-	<%= form_tag({}, :method => :get) do %>
-	<h3><%= l(:label_preferences) %></h3>
-	<%= hidden_field_tag(:progressive, 1) %>
-	<%= check_box_tag :show_project_menu, 1, progressive_setting?(:show_project_menu) %>
-		<%= label_tag :show_project_menu, l(:setting_show_project_menu) %><br />
-	<%= check_box_tag :show_project_description, 1, progressive_setting?(:show_project_description) %>
-		<%= label_tag :show_project_description, l(:setting_show_project_description) %><br />
-	<%= check_box_tag :show_project_progress, 1, progressive_setting?(:show_project_progress) %>
-		<%= label_tag :show_project_progress, l(:setting_show_project_progress) %><br />
-	<%= check_box_tag :show_only_for_my_projects, 1, progressive_setting?(:show_only_for_my_projects) %>
-		<%= label_tag :show_only_for_my_projects, l(:setting_show_only_for_my_projects)  %><br />
-	<%= check_box_tag :show_recent_projects, 1, progressive_setting?(:show_recent_projects) %>
-		<%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %><br />
-	<%= check_box_tag :show_custom_date_fields, 1, progressive_setting?(:show_custom_date_fields),:title => t(:tooltip_date_field_selected) %>
-		<%= label_tag :show_custom_date_fields, l(:setting_show_custom_date_fields)  %>
-	<%if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)%>
-		<%if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score"].present?%>
-		<br />
-			<%= check_box_tag :show_strategy_initiative_scorecard, 1, progressive_setting?(:show_strategy_initiative_scorecard), :title => t(:tooltip_scorecard_selected) %>
-			<%= label_tag :show_strategy_initiative_scorecard, l(:label_show_scorecard)  %>
-		<%end%>
-	<%end%>
-		<br/><br/>
-	<%= label_tag :label_sort_project, l(:label_sort_project)  %>
-		<%= select_tag :sort_project_by,options_for_select(get_sort_options,progressive_setting(:sort_project_by))%>
-	<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
+  <%= form_tag({}, :method => :get) do %>
+  <h3><%= l(:label_preferences) %></h3>
+  <%= hidden_field_tag(:progressive, 1) %>
+  <%= check_box_tag :show_project_menu, 1, progressive_setting?(:show_project_menu) %>
+    <%= label_tag :show_project_menu, l(:setting_show_project_menu) %><br />
+  <%= check_box_tag :show_project_description, 1, progressive_setting?(:show_project_description) %>
+    <%= label_tag :show_project_description, l(:setting_show_project_description) %><br />
+  <%= check_box_tag :show_project_progress, 1, progressive_setting?(:show_project_progress) %>
+    <%= label_tag :show_project_progress, l(:setting_show_project_progress) %><br />
+  <%= check_box_tag :show_only_for_my_projects, 1, progressive_setting?(:show_only_for_my_projects) %>
+    <%= label_tag :show_only_for_my_projects, l(:setting_show_only_for_my_projects)  %><br />
+  <%= check_box_tag :show_recent_projects, 1, progressive_setting?(:show_recent_projects) %>
+    <%= label_tag :show_recent_projects, l(:setting_show_recent_projects)  %><br />
+  <%= check_box_tag :show_custom_date_fields, 1, progressive_setting?(:show_custom_date_fields),:title => t(:tooltip_date_field_selected) %>
+    <%= label_tag :show_custom_date_fields, l(:setting_show_custom_date_fields)  %>
+  <%if Redmine::Plugin.registered_plugins.has_key?(:gttnl_bsc)%>
+    <%if Setting["plugin_gttnl_bsc"] && Setting["plugin_gttnl_bsc"]["show_scorecard"] == "1" && Setting["plugin_gttnl_bsc"]["cf_for_score_add"].present?%>
+    <br />
+      <%= check_box_tag :show_strategy_initiative_scorecard, 1, progressive_setting?(:show_strategy_initiative_scorecard), :title => t(:tooltip_scorecard_selected) %>
+      <%= label_tag :show_strategy_initiative_scorecard, l(:label_show_scorecard)  %>
+    <%end%>
+  <%end%>
+    <br/><br/>
+  <%= label_tag :label_sort_project, l(:label_sort_project)  %>
+    <%= select_tag :sort_project_by,options_for_select(get_sort_options,progressive_setting(:sort_project_by))%>
+  <p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
 <% end %>
 <% elsif params[:action] == 'show' %>
-	<%= form_tag({}, :method => :get) do %>
-	<h3><%= l(:label_preferences) %></h3>
-	<%= hidden_field_tag(:progressive, 1) %>
-	<%= select_tag(:show_project_progress_overview, options_for_select([
-			[l(:general_text_No), ''],
-			[l(:progressive_option_left), 'left'],
-			[l(:progressive_option_right), 'right']],
-		progressive_setting(:show_project_progress_overview))) %>
-	<%= label_tag :show_project_progress_overview, l(:setting_show_project_progress)  %>
+  <%= form_tag({}, :method => :get) do %>
+  <h3><%= l(:label_preferences) %></h3>
+  <%= hidden_field_tag(:progressive, 1) %>
+  <%= select_tag(:show_project_progress_overview, options_for_select([
+      [l(:general_text_No), ''],
+      [l(:progressive_option_left), 'left'],
+      [l(:progressive_option_right), 'right']],
+    progressive_setting(:show_project_progress_overview))) %>
+  <%= label_tag :show_project_progress_overview, l(:setting_show_project_progress)  %>
 
-	<p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
-	<% end %>
+  <p><%= submit_tag l(:button_apply), :class => 'button-small', :name => nil %></p>
+  <% end %>
 <% end %>
 <%= javascript_include_tag('tippy', plugin: 'gttnl_strategy_progress') %>
 <script type="text/javascript">
