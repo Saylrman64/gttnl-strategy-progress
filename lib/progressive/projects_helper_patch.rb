@@ -254,7 +254,7 @@ module Progressive::ProjectsHelperPatch
         s = ""
         sum_score = calculate_project_score(project,"cf_for_score_add")
         subtract_score = calculate_project_score(project,"cf_for_score_subtract")
-        s << "<div class='project_scorecard'><span class='project_score_total'><b>" + l(:score_total) + ":" + ((sum_score.sum{|x,y| y[1]}) - (subtract_score.sum{|x,y| y[1]})).to_s + "</b></span>  "
+        s << "<div class='project_scorecard_#{project.identifier}'><span class='project_score_total'><b>" + l(:score_total) + ":" + ((sum_score.sum{|x,y| y[1]}) - (subtract_score.sum{|x,y| y[1]})).to_s + "</b></span>  "
         sum_score.each do |id,score|
           s  << "<span class='project_score_field_#{score[0].split.join("_").downcase.gsub("&","")}' style='padding-right: 4px'>" + "#{score[0]}:#{score[1].to_s}</span>"
         end
